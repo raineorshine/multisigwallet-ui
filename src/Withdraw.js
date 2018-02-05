@@ -37,6 +37,7 @@ class Withdraw extends Component {
     this.sign = this.sign.bind(this)
     this.fetchWithdrawal = this.fetchWithdrawal.bind(this)
     this.fetchWallet = this.fetchWallet.bind(this)
+    this.deposit = this.deposit.bind(this)
   }
 
   /* NOTE: one per function */
@@ -68,12 +69,32 @@ class Withdraw extends Component {
     })
   }
 
+  deposit() {
+    return new Promise((resolve, reject) => {
+      wallet.deposit(this.state.walletId, { from: web3.eth.accounts[0], value: this.state.amount }, (err, txhash) => {
+        if (err) return reject(err)
+        const receipt = web3.eth.getTransactionReceipt(txhash)
+        this.setState({
+          wallet: Object.assign({}, this.state.wallet, {
+            balance: this.state.wallet.balance.plus(+this.state.amount)
+          })
+        })
+        resolve(this.state.walletId, txhash, receipt)
+      })
+    })
+  }
+
   fetchWallet(walletId) {
     return new Promise((resolve, reject) => {
-      wallet.wallets(walletId, (err, wallet) => {
+      wallet.wallets(walletId, (err, result) => {
         if (err) return reject(err)
-        this.setState({ wallet })
-        resolve(walletId, wallet)
+        this.setState({
+          wallet: {
+            quarum: result[0],
+            balance: result[1]
+          }
+        })
+        resolve(walletId, result)
       })
     })
   }
@@ -108,6 +129,11 @@ class Withdraw extends Component {
       <h1>Withdraw from Wallet {this.state.walletId}</h1>
 
       <div className='form-item'>
+        <label>Balance: </label>
+        <span type='text' className='text-right'>{this.state.wallet.balance.toString()} ETH</span>
+      </div>
+
+      <div className='form-item'>
         <label>Amount: </label>
         <input type='text' className='text-right' value={this.state.amount} onChange={e => this.setState({
           error: '',
@@ -115,6 +141,7 @@ class Withdraw extends Component {
           amount: e.target.value
         })} />
       </div>
+      <a className='button' onClick={this.deposit}>Deposit</a>
       <a className='button' onClick={this.proposeWithdrawal}>Propose Withdrawal</a>
     </div>
   }
@@ -155,7 +182,7 @@ class Withdraw extends Component {
 
       <div className='form-item'>
         <label>Balance: </label>
-        <span type='text' className='text-right'>{this.state.wallet.balance}</span>
+        <span type='text' className='text-right'>{this.state.wallet.balance.toString()} ETH</span>
       </div>
 
       {this.state.wallet ?
