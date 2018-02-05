@@ -2,10 +2,10 @@ import React, { Component } from 'react'
 import './App.css'
 const Web3 = require('web3')
 const walletInterface = require('./MultiSigWallet.json')
+const config = require('./config.json')
 
-const contractAddress = '0x72be480b025419528535d0c1bb4bb3ede0e29b0f'
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'))
-const wallet = web3.eth.contract(walletInterface.abi).at(contractAddress)
+const wallet = web3.eth.contract(walletInterface.abi).at(config.walletAddress)
 
 class Withdraw extends Component {
 
@@ -125,14 +125,14 @@ class Withdraw extends Component {
 
       <div className='form-item'>
         <label>Balance: </label>
-        <span type='text' className='text-right'>{this.state.wallet.balance.toString()} ETH</span>
+        <span type='text' className='text-right'>{this.state.wallet.balance.toString()} Wei</span>
       </div>
 
       {this.state.wallet.signers ?
         <div className='form-item form-solo'>
           <label>Signers: </label><br/>
-          {Array.apply(null, { length: Math.max(3, this.state.wallet.signers.length + 1) }).map((x, i) => {
-            return <div><span className='text address' key={i}>{this.state.wallet.signers[i]}</span></div>
+          {Array.apply(null, { length: Math.max(3, this.state.wallet.signers.length) }).map((x, i) => {
+            return <div key={i}><span className='text address'>{this.state.wallet.signers[i]}</span></div>
           })}
         </div> : null
       }
@@ -189,7 +189,7 @@ class Withdraw extends Component {
   render() {
     return <form>
 
-      <p className='note vspace-bottom-lg'>Using MultiSigWallet deployed at <span className='address'>{contractAddress}</span></p>
+      <p className='note vspace-bottom-lg'>Using MultiSigWallet deployed at <span className='address'>{config.walletAddress}</span></p>
 
       {this.renderLookupWallet()}
       {this.state.wallet ? this.renderPropose() : null}

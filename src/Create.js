@@ -2,10 +2,10 @@ import React, { Component } from 'react'
 import './App.css'
 const Web3 = require('web3')
 const walletInterface = require('./MultiSigWallet.json')
+const config = require('./config.json')
 
-const contractAddress = '0x72be480b025419528535d0c1bb4bb3ede0e29b0f'
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'))
-const wallet = web3.eth.contract(walletInterface.abi).at(contractAddress)
+const wallet = web3.eth.contract(walletInterface.abi).at(config.walletAddress)
 
 /** Functionally replace a single value in an array. */
 const replaceArrayValue = (arr, i, value) => {
@@ -96,7 +96,7 @@ class Create extends Component {
       <div className='form-item form-solo'>
         <label>Signers: </label><br/>
         {Array.apply(null, { length: Math.max(3, this.state.wallet.signers.length + 1) }).map((x, i) => {
-          return <input type='text' key={i} value={this.state.wallet.signers[i]} onChange={e => this.changeSigner(i, e.target.value)} />
+          return <div key={i}><input type='text' value={this.state.wallet.signers[i]} onChange={e => this.changeSigner(i, e.target.value)} /></div>
         })}
       </div>
     </div>
@@ -105,8 +105,8 @@ class Create extends Component {
   render() {
     return <form>
 
+      <p className='note vspace-bottom-lg'>Using MultiSigWallet deployed at <span className='address'>{config.walletAddress}</span></p>
       <h1>Create MultiSig Wallet</h1>
-      <p className='note vspace-bottom-lg'>Using MultiSigWallet deployed at <span className='address'>{contractAddress}</span></p>
 
       {this.renderForm()}
 

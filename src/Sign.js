@@ -2,10 +2,10 @@ import React, { Component } from 'react'
 import './App.css'
 const Web3 = require('web3')
 const walletInterface = require('./MultiSigWallet.json')
+const config = require('./config.json')
 
-const contractAddress = '0x72be480b025419528535d0c1bb4bb3ede0e29b0f'
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'))
-const wallet = web3.eth.contract(walletInterface.abi).at(contractAddress)
+const wallet = web3.eth.contract(walletInterface.abi).at(config.walletAddress)
 
 class Sign extends Component {
 
@@ -184,7 +184,7 @@ class Sign extends Component {
   render() {
     return <form>
 
-      <p className='note vspace-bottom-lg'>Using MultiSigWallet deployed at <span className='address'>{contractAddress}</span></p>
+      <p className='note vspace-bottom-lg'>Using MultiSigWallet deployed at <span className='address'>{config.walletAddress}</span></p>
 
       {this.renderLookupWithdrawal()}
       {this.state.withdrawal ? this.renderSign() : null}
