@@ -19,8 +19,7 @@ class Sign extends Component {
       wallet: null,
       withdrawal: null,
       walletId: 0,
-      to: '0x0000000000000000000000000000000000000000',
-      amount: 0
+      sender: ''
     }
 
     this.out = this.out.bind(this)
@@ -30,8 +29,7 @@ class Sign extends Component {
     this.renderLookupWithdrawal = this.renderLookupWithdrawal.bind(this)
     this.renderWallet = this.renderWallet.bind(this)
     this.renderSign = this.renderSign.bind(this)
-    this.lookupWallet = this.lookupWallet.bind(this)
-    this.lookupSignal = this.lookupSignal.bind(this)
+    this.lookupWithdrawal = this.lookupWithdrawal.bind(this)
     this.sign = this.sign.bind(this)
     this.fetchSignal = this.fetchSignal.bind(this)
     this.fetchWallet = this.fetchWallet.bind(this)
@@ -50,6 +48,24 @@ class Sign extends Component {
     this.setState({
       output: '',
       error: ''
+    })
+  }
+
+  fetchWithdrawal(withdrawalId) {
+    return new Promise((resolve, reject) => {
+      wallet.withdrawals(withdrawalId, (err, result) => {
+        if (err) return reject(err)
+        this.setState({
+          withdrawal: {
+            walletId: result[0],
+            creator: result[1],
+            to: result[2],
+            multisigId: +result[3],
+            amount: result[4]
+          }
+        })
+        resolve(withdrawalId, result)
+      })
     })
   }
 
@@ -78,19 +94,20 @@ class Sign extends Component {
     })
   }
 
-  lookupWallet() {
-    this.fetchWallet(this.state.walletId)
-      .then(() => this.fetchWallet(this.state.walletId))
-      .catch(this.error)
-  }
-
-  lookupSignal() {
-    this.fetchSignal(this.state.withdrawalId)
+  lookupWithdrawal() {
+    this.fetchWithdrawal(this.state.withdrawalId)
       .then(() => this.fetchWallet(this.state.walletId))
       .catch(this.error)
   }
 
   sign() {
+    return new Promise((resolve, reject) => {
+      wallet.sign(this.state.withdrawal.multisigId, { from: this.state.sender, gas: config.gas }, (err, txhash) => {
+        if (err) return reject(err)
+        this.out('Withdrawal Signed')
+        resolve(this.state.walletId, txhash)
+      })
+    })
   }
 
   renderWallet() {
@@ -110,13 +127,11 @@ class Sign extends Component {
           amount: e.target.value
         })} />
       </div>
-      <a className='button' onClick={this.deposit}>Deposit</a>
-      <a className='button' onClick={this.proposeSignal}>Propose Signal</a>
     </div>
   }
 
   renderLookupWithdrawal() {
-    return <div>
+    return <div className='vspace-bottom-lg'>
       <div className='form-item form-solo'>
         <label>Withdrawal Id: </label>
         <input type='text' className='text-right' value={this.state.withdrawalId} onChange={e => this.setState({
@@ -126,7 +141,7 @@ class Sign extends Component {
         })} />
       </div>
 
-      <a className='button' onClick={this.lookupSignal}>Lookup Withdrawal</a>
+      <a className='button' onClick={this.lookupWithdrawal}>Lookup Withdrawal</a>
     </div>
   }
 
@@ -135,17 +150,30 @@ class Sign extends Component {
       <h1>Sign</h1>
 
       <div className='form-item'>
-        <label>Balance: </label>
-        <span type='text' className='text-right'>{this.state.wallet.balance.toString()} ETH</span>
+        <label>Amount to withdraw: </label>
+        <span type='text' className='readonly text-right'>{this.state.withdrawal.amount.toString()} Wei</span>
+      </div>
+
+      <div className='form-item'>
+        <label>Withdrawal address: </label>
+        <span type='text' className='readonly'>{this.state.withdrawal.to.toString()}</span>
       </div>
 
       {this.state.wallet ?
-        <div className='form-item'>
-          <label>Amount to withdraw: </label>
-          <span type='text' className='text-right'>{this.state.withdrawal.amount}</span>
-        </div> :
-        '...'
+        <div>
+          <div className='form-item'>
+            <label>Balance: </label>
+            <span type='text' className='text-right'>{this.state.wallet.balance.toString()} Wei</span>
+          </div>
+        </div> : null
       }
+
+      <div className='form-item'>
+        <label>Sender: </label>
+        <input type='text' value={this.state.sender} onChange={e => this.setState({
+          sender: e.target.value
+        })} />
+      </div>
 
       <a className='button vspace' onClick={this.sign}>Sign</a>
     </div>
