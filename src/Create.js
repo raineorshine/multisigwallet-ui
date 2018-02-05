@@ -60,7 +60,7 @@ class Create extends Component {
 
   createWallet() {
     return new Promise((resolve, reject) => {
-      wallet.createWallet(this.state.wallet.quarum, this.state.wallet.signers.filter(x => x), { from: web3.eth.accounts[0], gas: 1000000 }, (err, txhash) => {
+      wallet.createWallet(this.state.wallet.quarum, this.state.wallet.signers.filter(x => x), { from: web3.eth.accounts[0], gas: config.gas }, (err, txhash) => {
         if (err) return reject(err)
         const receipt = web3.eth.getTransactionReceipt(txhash)
         const id = +receipt.logs[0].topics[1]

@@ -130,7 +130,7 @@ class Withdraw extends Component {
 
   renderLookupWallet() {
     return <div className='vspace-bottom-lg'>
-      <div className='form-item'>
+      <div className='form-item form-solo'>
         <label>Wallet Id: </label>
         <input type='text' className='text-right' value={this.state.walletId} onChange={e => this.setState({
           error: '',

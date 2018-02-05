@@ -26,17 +26,15 @@ class Sign extends Component {
     this.out = this.out.bind(this)
     this.error = this.error.bind(this)
     this.reset = this.reset.bind(this)
-    this.proposeSignal = this.proposeSignal.bind(this)
     this.render = this.render.bind(this)
     this.renderLookupWithdrawal = this.renderLookupWithdrawal.bind(this)
-    this.renderPropose = this.renderPropose.bind(this)
+    this.renderWallet = this.renderWallet.bind(this)
     this.renderSign = this.renderSign.bind(this)
     this.lookupWallet = this.lookupWallet.bind(this)
     this.lookupSignal = this.lookupSignal.bind(this)
     this.sign = this.sign.bind(this)
     this.fetchSignal = this.fetchSignal.bind(this)
     this.fetchWallet = this.fetchWallet.bind(this)
-    this.deposit = this.deposit.bind(this)
   }
 
   /* NOTE: one per function */
@@ -52,34 +50,6 @@ class Sign extends Component {
     this.setState({
       output: '',
       error: ''
-    })
-  }
-
-  proposeSignal() {
-    return new Promise((resolve, reject) => {
-      wallet.proposeSignal(this.state.walletId, this.state.to, this.state.amount, { from: web3.eth.accounts[0] }, (err, txhash) => {
-        if (err) return reject(err)
-        const receipt = web3.eth.getTransactionReceipt(txhash)
-        const logs = receipt.logs[0].topics
-        console.log(logs)
-        this.setState({ withdrawal: {} })
-        resolve(this.state.walletId, txhash, receipt)
-      })
-    })
-  }
-
-  deposit() {
-    return new Promise((resolve, reject) => {
-      wallet.deposit(this.state.walletId, { from: web3.eth.accounts[0], value: this.state.amount }, (err, txhash) => {
-        if (err) return reject(err)
-        const receipt = web3.eth.getTransactionReceipt(txhash)
-        this.setState({
-          wallet: Object.assign({}, this.state.wallet, {
-            balance: this.state.wallet.balance.plus(+this.state.amount)
-          })
-        })
-        resolve(this.state.walletId, txhash, receipt)
-      })
     })
   }
 
@@ -123,7 +93,7 @@ class Sign extends Component {
   sign() {
   }
 
-  renderPropose() {
+  renderWallet() {
     return <div>
       <h1>Sign from Wallet {this.state.walletId}</h1>
 
@@ -147,7 +117,7 @@ class Sign extends Component {
 
   renderLookupWithdrawal() {
     return <div>
-      <div className='form-item'>
+      <div className='form-item form-solo'>
         <label>Withdrawal Id: </label>
         <input type='text' className='text-right' value={this.state.withdrawalId} onChange={e => this.setState({
           error: '',

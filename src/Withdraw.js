@@ -19,6 +19,7 @@ class Withdraw extends Component {
       wallet: null,
       withdrawal: null,
       walletId: 0,
+      sender: web3.eth.accounts[0],
       to: '0x0000000000000000000000000000000000000000',
       amount: 0
     }
@@ -52,12 +53,16 @@ class Withdraw extends Component {
 
   proposeWithdrawal() {
     return new Promise((resolve, reject) => {
-      wallet.proposeWithdrawal(this.state.walletId, this.state.to, this.state.amount, { from: web3.eth.accounts[0] }, (err, txhash) => {
+      wallet.proposeWithdrawal(this.state.walletId, this.state.to, this.state.amount, { from: this.state.sender, gas: config.gas }, (err, txhash) => {
         if (err) return reject(err)
         const receipt = web3.eth.getTransactionReceipt(txhash)
-        const logs = receipt.logs[0].topics
-        console.log(logs)
-        this.setState({ withdrawal: {} })
+        // get first 64 bytes of data after the 0x
+        // cleaner to decode the log data. See https://ethereum.stackexchange.com/questions/1381/how-do-i-parse-the-transaction-receipt-log-with-web3-js
+        const multisigId = +receipt.logs[1].data.slice(0, 66)
+        this.setState({
+          withdrawal: { multisigId }
+        })
+        this.out('Withdrawal Proposal created: ' + multisigId)
         resolve(this.state.walletId, txhash, receipt)
       })
     })
@@ -114,6 +119,13 @@ class Withdraw extends Component {
         </div> : null
       }
 
+      {this.state.wallet.signers ?
+        <div className='form-item'>
+          <label>Signers needed for withdrawal: </label>
+          <span type='text' className='readonly text-right'>{this.state.wallet.quarum.toNumber()} out of {this.state.wallet.signers.length}</span>
+        </div> : null
+      }
+
       <div className='form-item'>
         <label>Balance: </label>
         <span type='text' className='readonly text-right'>{this.state.wallet.balance.toString()} Wei</span>
@@ -122,28 +134,32 @@ class Withdraw extends Component {
       <div className='form-item'>
         <label>Amount: </label>
         <input type='text' className='text-right' value={this.state.amount} onChange={e => this.setState({
-          error: '',
-          output: '',
           amount: e.target.value
         })} />
       </div>
 
       <div className='form-item'>
-        <label>Deposit Address: </label>
-        <input type='text' value={this.state.to} onChange={e => this.setState({
-          error: '',
-          output: '',
-          amount: e.target.value
+        <label>Sender: </label>
+        <input type='text' value={this.state.sender} onChange={e => this.setState({
+          sender: e.target.value
         })} />
       </div>
 
+      <div className='form-item'>
+        <label>Withdraw Address: </label>
+        <input type='text' value={this.state.to} onChange={e => this.setState({
+          to: e.target.value
+        })} />
+      </div>
+
+      <p className='note'>Only one of the signers can propose a withdrawal.</p>
       <a className='button' onClick={this.proposeWithdrawal}>Propose Withdrawal</a>
     </div>
   }
 
   renderLookupWallet() {
     return <div className='vspace-bottom-lg'>
-      <div className='form-item'>
+      <div className='form-item form-solo'>
         <label>Wallet Id: </label>
         <input type='text' className='text-right' value={this.state.walletId} onChange={e => this.setState({
           error: '',
