@@ -30,6 +30,10 @@ form h2 {
   text-transform: uppercase;
 }
 
+nav .button {
+  margin-bottom: 10px;
+}
+
 .App {
   text-align: center;
   margin: 20px;

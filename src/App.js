@@ -9,13 +9,17 @@ import {
 import Create from './Create.js'
 import Withdraw from './Withdraw.js'
 import Sign from './Sign.js'
+import Deposit from './Deposit.js'
 
 const App = () =>
   <Router>
     <div className="App">
-      <Link to="/create" className="button">Create</Link>
-      <Link to="/withdraw" className="button">Withdraw</Link>
-      <Link to="/sign" className="button">Sign</Link>
+      <nav>
+        <Link to="/create" className="button">Create</Link>
+        <Link to="/deposit" className="button">Deposit</Link>
+        <Link to="/withdraw" className="button">Withdraw</Link>
+        <Link to="/sign" className="button">Sign</Link>
+      </nav>
 
       <div>
         <header className="App-header">
@@ -23,6 +27,7 @@ const App = () =>
         </header>
         <Route exact path="/" component={Create}/>
         <Route path="/create" component={Create}/>
+        <Route path="/deposit" component={Deposit}/>
         <Route path="/withdraw" component={Withdraw}/>
         <Route path="/sign" component={Sign}/>
       </div>

@@ -15,9 +15,7 @@ class Withdraw extends Component {
     this.state = {
       error: '',
       output: '',
-      withdrawalId: '',
       wallet: null,
-      withdrawal: null,
       walletId: 0,
       to: '0x0000000000000000000000000000000000000000',
       amount: 0
@@ -26,12 +24,12 @@ class Withdraw extends Component {
     this.out = this.out.bind(this)
     this.error = this.error.bind(this)
     this.reset = this.reset.bind(this)
-    this.proposeWithdrawal = this.proposeWithdrawal.bind(this)
     this.render = this.render.bind(this)
     this.renderLookupWallet = this.renderLookupWallet.bind(this)
     this.renderWallet = this.renderWallet.bind(this)
     this.lookupWallet = this.lookupWallet.bind(this)
     this.fetchWallet = this.fetchWallet.bind(this)
+    this.deposit = this.deposit.bind(this)
   }
 
   /* NOTE: one per function */
@@ -50,14 +48,16 @@ class Withdraw extends Component {
     })
   }
 
-  proposeWithdrawal() {
+  deposit() {
     return new Promise((resolve, reject) => {
-      wallet.proposeWithdrawal(this.state.walletId, this.state.to, this.state.amount, { from: web3.eth.accounts[0] }, (err, txhash) => {
+      wallet.deposit(this.state.walletId, { from: web3.eth.accounts[0], value: this.state.amount }, (err, txhash) => {
         if (err) return reject(err)
         const receipt = web3.eth.getTransactionReceipt(txhash)
-        const logs = receipt.logs[0].topics
-        console.log(logs)
-        this.setState({ withdrawal: {} })
+        this.setState({
+          wallet: Object.assign({}, this.state.wallet, {
+            balance: this.state.wallet.balance.plus(+this.state.amount)
+          })
+        })
         resolve(this.state.walletId, txhash, receipt)
       })
     })
@@ -98,9 +98,6 @@ class Withdraw extends Component {
       .catch(this.error)
   }
 
-  sign() {
-  }
-
   renderWallet() {
     return <div>
       <h1>Wallet #{this.state.walletId}</h1>
@@ -127,17 +124,7 @@ class Withdraw extends Component {
           amount: e.target.value
         })} />
       </div>
-
-      <div className='form-item'>
-        <label>Deposit Address: </label>
-        <input type='text' value={this.state.to} onChange={e => this.setState({
-          error: '',
-          output: '',
-          amount: e.target.value
-        })} />
-      </div>
-
-      <a className='button' onClick={this.proposeWithdrawal}>Propose Withdrawal</a>
+      <a className='button' onClick={this.deposit}>Deposit</a>
     </div>
   }
 
