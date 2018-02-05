@@ -1,0 +1,114 @@
+img {
+  max-width: 100%;
+}
+
+label {
+  margin-bottom: 5px;
+}
+
+input[type='text'], .readonly {
+  color: #666;
+  font-size: 16px;
+  padding: 6px 10px;
+  display: inline-block;
+  width: 260px;
+  margin: 0 0 5px 0;
+  text-align: left;
+}
+
+input[type='text'].text-right {
+  text-align: right;
+}
+
+h1,h2,h3,h4,h5 {
+  font-weight: 300;
+}
+
+form h2 {
+  font-size: 14px;
+  color: #aaa;
+  text-transform: uppercase;
+}
+
+.App {
+  text-align: center;
+  margin: 20px;
+  margin-bottom: 50px;
+}
+
+.App-header {
+  padding: 50px;
+}
+
+.App-logo {
+  height: 150px;
+}
+
+.button {
+  padding: 8px 50px;
+  border: solid 1px black;
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+  color: black;
+  margin: 0 10px;
+}
+
+.button:hover { background-color: #f5f5f5; }
+.button:active { background-color: #f3f3f3; }
+
+.button.dim {
+  border-color: #999;
+  color: #999;
+}
+
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+
+.form-item {
+  margin: 20px;
+}
+
+.form-item label {
+  width: 180px;
+  display: inline-block;
+  text-align: right;
+  padding-right: 20px;
+}
+
+.form-solo label {
+  width: auto;
+}
+
+.vspace { margin-top: 20px; margin-bottom: 20px; }
+.vspace-lg { margin-top: 40px; margin-bottom: 40px; }
+.vspace-bottom { margin-bottom: 20px; }
+.vspace-bottom-lg { margin-bottom: 40px; }
+
+.hidden {
+  display: none;
+}
+
+.error {
+  color: red;
+}
+
+.output {
+  width: 600px;
+  max-width: 100%;
+  height: 500px;
+  overflow-y: scroll;
+  margin: 0 auto;
+}
+
+.note {
+  font-size: 14px;
+  color: #666;
+}
+
+.address {
+  font-family: monospace;
+  background-color: #f5f5f5;
+  padding: 2px 4px;
+}
