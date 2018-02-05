@@ -7,7 +7,7 @@ const contractAddress = '0x72be480b025419528535d0c1bb4bb3ede0e29b0f'
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'))
 const wallet = web3.eth.contract(walletInterface.abi).at(contractAddress)
 
-class Withdraw extends Component {
+class Sign extends Component {
 
   constructor(props) {
     super(props)
@@ -26,13 +26,15 @@ class Withdraw extends Component {
     this.out = this.out.bind(this)
     this.error = this.error.bind(this)
     this.reset = this.reset.bind(this)
-    this.proposeWithdrawal = this.proposeWithdrawal.bind(this)
+    this.proposeSignal = this.proposeSignal.bind(this)
     this.render = this.render.bind(this)
-    this.renderLookupWallet = this.renderLookupWallet.bind(this)
+    this.renderLookupWithdrawal = this.renderLookupWithdrawal.bind(this)
     this.renderPropose = this.renderPropose.bind(this)
     this.renderSign = this.renderSign.bind(this)
     this.lookupWallet = this.lookupWallet.bind(this)
+    this.lookupSignal = this.lookupSignal.bind(this)
     this.sign = this.sign.bind(this)
+    this.fetchSignal = this.fetchSignal.bind(this)
     this.fetchWallet = this.fetchWallet.bind(this)
     this.deposit = this.deposit.bind(this)
   }
@@ -53,9 +55,9 @@ class Withdraw extends Component {
     })
   }
 
-  proposeWithdrawal() {
+  proposeSignal() {
     return new Promise((resolve, reject) => {
-      wallet.proposeWithdrawal(this.state.walletId, this.state.to, this.state.amount, { from: web3.eth.accounts[0] }, (err, txhash) => {
+      wallet.proposeSignal(this.state.walletId, this.state.to, this.state.amount, { from: web3.eth.accounts[0] }, (err, txhash) => {
         if (err) return reject(err)
         const receipt = web3.eth.getTransactionReceipt(txhash)
         const logs = receipt.logs[0].topics
@@ -86,33 +88,35 @@ class Withdraw extends Component {
       wallet.wallets(walletId, (err, result) => {
         if (err) return reject(err)
         this.setState({
-          wallet: Object.assign({}, this.state.wallet, {
+          wallet: {
             quarum: result[0],
             balance: result[1]
-          })
+          }
         })
         resolve(walletId, result)
       })
     })
   }
 
-  fetchSigners(walletId) {
+  fetchSignal(withdrawalId) {
     return new Promise((resolve, reject) => {
-      wallet.getWalletSigners(walletId, (err, signers) => {
+      wallet.withdrawals(withdrawalId, (err, withdrawal) => {
         if (err) return reject(err)
-        this.setState({
-          wallet: Object.assign({}, this.state.wallet, { signers })
-        })
-        resolve(walletId, signers)
+        this.setState({ withdrawal })
+        resolve(withdrawalId, withdrawal)
       })
     })
   }
 
   lookupWallet() {
-    Promise.all([
-      this.fetchWallet(this.state.walletId),
-      this.fetchSigners(this.state.walletId),
-    ])
+    this.fetchWallet(this.state.walletId)
+      .then(() => this.fetchWallet(this.state.walletId))
+      .catch(this.error)
+  }
+
+  lookupSignal() {
+    this.fetchSignal(this.state.withdrawalId)
+      .then(() => this.fetchWallet(this.state.walletId))
       .catch(this.error)
   }
 
@@ -121,21 +125,12 @@ class Withdraw extends Component {
 
   renderPropose() {
     return <div>
-      <h1>Wallet #{this.state.walletId}</h1>
+      <h1>Sign from Wallet {this.state.walletId}</h1>
 
       <div className='form-item'>
         <label>Balance: </label>
         <span type='text' className='text-right'>{this.state.wallet.balance.toString()} ETH</span>
       </div>
-
-      {this.state.wallet.signers ?
-        <div className='form-item form-solo'>
-          <label>Signers: </label><br/>
-          {Array.apply(null, { length: Math.max(3, this.state.wallet.signers.length + 1) }).map((x, i) => {
-            return <div><span className='text address' key={i}>{this.state.wallet.signers[i]}</span></div>
-          })}
-        </div> : null
-      }
 
       <div className='form-item'>
         <label>Amount: </label>
@@ -146,22 +141,22 @@ class Withdraw extends Component {
         })} />
       </div>
       <a className='button' onClick={this.deposit}>Deposit</a>
-      <a className='button' onClick={this.proposeWithdrawal}>Propose Withdrawal</a>
+      <a className='button' onClick={this.proposeSignal}>Propose Signal</a>
     </div>
   }
 
-  renderLookupWallet() {
-    return <div className='vspace-bottom-lg'>
+  renderLookupWithdrawal() {
+    return <div>
       <div className='form-item'>
-        <label>Wallet Id: </label>
-        <input type='text' className='text-right' value={this.state.walletId} onChange={e => this.setState({
+        <label>Withdrawal Id: </label>
+        <input type='text' className='text-right' value={this.state.withdrawalId} onChange={e => this.setState({
           error: '',
           output: '',
-          walletId: +e.target.value
+          withdrawalId: +e.target.value
         })} />
       </div>
 
-      <a className='button' onClick={this.lookupWallet}>Lookup Wallet</a>
+      <a className='button' onClick={this.lookupSignal}>Lookup Withdrawal</a>
     </div>
   }
 
@@ -171,7 +166,7 @@ class Withdraw extends Component {
 
       <div className='form-item'>
         <label>Balance: </label>
-        <span type='text' className='text-right'>{this.state.wallet.balance.toString()} Wei</span>
+        <span type='text' className='text-right'>{this.state.wallet.balance.toString()} ETH</span>
       </div>
 
       {this.state.wallet ?
@@ -191,8 +186,8 @@ class Withdraw extends Component {
 
       <p className='note vspace-bottom-lg'>Using MultiSigWallet deployed at <span className='address'>{contractAddress}</span></p>
 
-      {this.renderLookupWallet()}
-      {this.state.wallet ? this.renderPropose() : null}
+      {this.renderLookupWithdrawal()}
+      {this.state.withdrawal ? this.renderSign() : null}
 
       <pre className='output text-left'>
         <p className={'error ' + (this.state.error ? '' : 'hidden')}>{this.state.error}</p>
@@ -203,4 +198,4 @@ class Withdraw extends Component {
   }
 }
 
-export default Withdraw
+export default Sign
