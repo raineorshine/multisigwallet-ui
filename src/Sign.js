@@ -8,6 +8,7 @@ const config = require('./config.json')
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'))
 const wallet = web3.eth.contract(walletInterface.abi).at(config.walletAddress)
 
+const [STATUS_OPEN, STATUS_COMPLETED, STATUS_CANCELED] = [0,1,2]
 
 /** Checks if the given signer has signed the proposal. */
 const hasSigned = (multisigId, signer) => {
@@ -70,11 +71,12 @@ class Sign extends Component {
         if (err) return reject(err)
         this.setState({
           withdrawal: {
-            walletId: +result[0],
+            walletId: result[0].toNumber(),
             creator: result[1],
             to: result[2],
-            multisigId: +result[3],
-            amount: result[4]
+            multisigId: result[3].toNumber(),
+            amount: result[4],
+            status: result[5].toNumber()
           }
         })
         resolve([withdrawalId, result])
@@ -224,7 +226,11 @@ class Sign extends Component {
         </div> : null
       }
 
-      {this.state.wallet && this.state.wallet.hasSigned && this.state.wallet.hasSigned.filter(x => x).length >= this.state.wallet.quarum ?
+      {this.state.withdrawal && this.state.withdrawal.status === STATUS_COMPLETED ?
+          <p className='note'>This withdrawal has been completed.</p>
+        : this.state.withdrawal && this.state.withdrawal.status === STATUS_CANCELED ?
+          <p className='note'>This withdrawal has been canceled.</p>
+        : this.state.wallet && this.state.wallet.hasSigned && this.state.wallet.hasSigned.filter(x => x).length >= this.state.wallet.quarum ?
         <p className='note'>Quarum has been obtained. Any signer may <Link to="/execute">execute the withdrawal</Link>.</p>
         : <div>
           <div className='form-item'>

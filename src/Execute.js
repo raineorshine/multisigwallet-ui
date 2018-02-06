@@ -7,6 +7,8 @@ const config = require('./config.json')
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'))
 const wallet = web3.eth.contract(walletInterface.abi).at(config.walletAddress)
 
+const [STATUS_OPEN, STATUS_COMPLETED, STATUS_CANCELED] = [0,1,2]
+
 class Execute extends Component {
 
   constructor(props) {
@@ -28,7 +30,7 @@ class Execute extends Component {
     this.render = this.render.bind(this)
     this.renderLookupWithdrawal = this.renderLookupWithdrawal.bind(this)
     this.renderWallet = this.renderWallet.bind(this)
-    this.renderSign = this.renderSign.bind(this)
+    this.renderExecute = this.renderExecute.bind(this)
     this.lookupWithdrawal = this.lookupWithdrawal.bind(this)
     this.execute = this.execute.bind(this)
     this.fetchSignal = this.fetchSignal.bind(this)
@@ -57,11 +59,12 @@ class Execute extends Component {
         if (err) return reject(err)
         this.setState({
           withdrawal: {
-            walletId: result[0],
+            walletId: result[0].toNumber(),
             creator: result[1],
             to: result[2],
-            multisigId: +result[3],
-            amount: result[4]
+            multisigId: result[3].toNumber(),
+            amount: result[4],
+            status: result[5].toNumber()
           }
         })
         resolve(withdrawalId, result)
@@ -96,7 +99,7 @@ class Execute extends Component {
 
   lookupWithdrawal() {
     this.fetchWithdrawal(this.state.withdrawalId)
-      .then(() => this.fetchWallet(this.state.walletId))
+      .then(() => this.fetchWallet(this.state.withdrawal.walletId))
       .catch(this.error)
   }
 
@@ -104,15 +107,19 @@ class Execute extends Component {
     return new Promise((resolve, reject) => {
       wallet.executeWithdrawal(this.state.withdrawal.multisigId, { from: this.state.sender, gas: config.gas }, (err, txhash) => {
         if (err) return reject(err)
-        this.out('Withdrawal Executed')
-        resolve(this.state.walletId, txhash)
+        this.setState({
+          withdrawal: Object.assign({}, this.state.withdrawal, {
+            status: STATUS_COMPLETED
+          })
+        })
+        resolve(this.state.withdrawal.walletId, txhash)
       })
     })
   }
 
   renderWallet() {
     return <div>
-      <h1>Execute from Wallet {this.state.walletId}</h1>
+      <h1>Execute from Wallet {this.state.withdrawal.walletId}</h1>
 
       <div className='form-item'>
         <label>Balance: </label>
@@ -145,7 +152,7 @@ class Execute extends Component {
     </div>
   }
 
-  renderSign() {
+  renderExecute() {
     return <div>
       <h1>Execute</h1>
 
@@ -168,14 +175,21 @@ class Execute extends Component {
         </div> : null
       }
 
-      <div className='form-item'>
-        <label>Sender: </label>
-        <input type='text' value={this.state.sender} onChange={e => this.setState({
-          sender: e.target.value
-        })} />
-      </div>
-
-      <a className='button vspace' onClick={this.execute}>Execute Withdrawal</a>
+      {this.state.withdrawal ? <div>
+        {this.state.withdrawal.status === STATUS_COMPLETED ?
+          <p className='note'>This withdrawal has been completed.</p>
+          : this.state.withdrawal.status === STATUS_CANCELED ?
+          <p className='note'>This withdrawal has been canceled.</p>
+          : <div>
+            <div className='form-item'>
+              <label>Sender: </label>
+              <input type='text' value={this.state.sender} onChange={e => this.setState({
+                sender: e.target.value
+              })} />
+            </div>
+          <a className='button vspace' onClick={this.execute}>Execute Withdrawal</a>
+        </div>}
+      </div> : null}
     </div>
   }
 
@@ -185,7 +199,7 @@ class Execute extends Component {
       <p className='note vspace-bottom-lg'>Using MultiSigWallet deployed at <span className='address'>{config.walletAddress}</span></p>
 
       {this.renderLookupWithdrawal()}
-      {this.state.withdrawal ? this.renderSign() : null}
+      {this.state.withdrawal ? this.renderExecute() : null}
 
       <pre className='output text-left'>
         <p className={'error ' + (this.state.error ? '' : 'hidden')}>{this.state.error}</p>
