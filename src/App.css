@@ -116,3 +116,10 @@ nav .button {
   background-color: #f5f5f5;
   padding: 2px 4px;
 }
+
+.address-annotation {
+  display: inline-block;
+  width: 150px;
+  text-align: left;
+  margin-left: 5px;
+}

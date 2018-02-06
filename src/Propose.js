@@ -7,7 +7,7 @@ const config = require('./config.json')
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'))
 const wallet = web3.eth.contract(walletInterface.abi).at(config.walletAddress)
 
-class Withdraw extends Component {
+class Propose extends Component {
 
   constructor(props) {
     super(props)
@@ -190,4 +190,4 @@ class Withdraw extends Component {
   }
 }
 
-export default Withdraw
+export default Propose

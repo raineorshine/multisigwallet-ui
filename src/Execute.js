@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import './App.css'
-import { Link } from 'react-router-dom'
 const Web3 = require('web3')
 const walletInterface = require('./MultiSigWallet.json')
 const config = require('./config.json')
@@ -8,18 +7,7 @@ const config = require('./config.json')
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'))
 const wallet = web3.eth.contract(walletInterface.abi).at(config.walletAddress)
 
-
-/** Checks if the given signer has signed the proposal. */
-const hasSigned = (multisigId, signer) => {
-  return new Promise((resolve, reject) => {
-    wallet.hasSigned(multisigId, signer, (err, result) => {
-      if (err) return reject(err)
-      resolve([signer, result])
-    })
-  })
-}
-
-class Sign extends Component {
+class Execute extends Component {
 
   constructor(props) {
     super(props)
@@ -30,7 +18,8 @@ class Sign extends Component {
       withdrawalId: '',
       wallet: null,
       withdrawal: null,
-      sender: web3.eth.accounts[1]
+      walletId: 0,
+      sender: web3.eth.accounts[0]
     }
 
     this.out = this.out.bind(this)
@@ -41,10 +30,9 @@ class Sign extends Component {
     this.renderWallet = this.renderWallet.bind(this)
     this.renderSign = this.renderSign.bind(this)
     this.lookupWithdrawal = this.lookupWithdrawal.bind(this)
-    this.sign = this.sign.bind(this)
-    this.fetchWithdrawal = this.fetchWithdrawal.bind(this)
+    this.execute = this.execute.bind(this)
+    this.fetchSignal = this.fetchSignal.bind(this)
     this.fetchWallet = this.fetchWallet.bind(this)
-    this.fetchHasSigned = this.fetchHasSigned.bind(this)
   }
 
   /* NOTE: one per function */
@@ -53,7 +41,6 @@ class Sign extends Component {
   }
 
   error(value) {
-    console.error(value)
     this.setState({ error: value.toString() })
   }
 
@@ -70,14 +57,14 @@ class Sign extends Component {
         if (err) return reject(err)
         this.setState({
           withdrawal: {
-            walletId: +result[0],
+            walletId: result[0],
             creator: result[1],
             to: result[2],
             multisigId: +result[3],
             amount: result[4]
           }
         })
-        resolve([withdrawalId, result])
+        resolve(withdrawalId, result)
       })
     })
   }
@@ -92,71 +79,40 @@ class Sign extends Component {
             balance: result[1]
           }
         })
-        resolve([walletId, result])
+        resolve(walletId, result)
       })
     })
   }
 
-  fetchSigners(walletId) {
+  fetchSignal(withdrawalId) {
     return new Promise((resolve, reject) => {
-      wallet.getWalletSigners(walletId, (err, signers) => {
+      wallet.withdrawals(withdrawalId, (err, withdrawal) => {
         if (err) return reject(err)
-        this.setState({
-          wallet: Object.assign({}, this.state.wallet, { signers })
-        })
-        resolve([walletId, signers])
+        this.setState({ withdrawal })
+        resolve(withdrawalId, withdrawal)
       })
     })
-  }
-
-  /** Check the signature status of all signers. */
-  fetchHasSigned() {
-    return Promise.all(this.state.wallet.signers.map(signer => hasSigned(this.state.withdrawal.multisigId, signer)))
-      .then(hasSignedArray => {
-        this.setState({
-          wallet: Object.assign({}, this.state.wallet, {
-            hasSigned: hasSignedArray.map(([signer, signed]) => signed)
-          })
-        })
-      })
   }
 
   lookupWithdrawal() {
     this.fetchWithdrawal(this.state.withdrawalId)
-      .then(() => Promise.all([
-        this.fetchWallet(this.state.withdrawal.walletId),
-        this.fetchSigners(this.state.withdrawal.walletId)
-          .then(this.fetchHasSigned)
-      ]))
+      .then(() => this.fetchWallet(this.state.walletId))
       .catch(this.error)
   }
 
-  sign() {
+  execute() {
     return new Promise((resolve, reject) => {
-      wallet.sign(this.state.withdrawal.multisigId, { from: this.state.sender, gas: config.gas }, (err, txhash) => {
+      wallet.executeWithdrawal(this.state.withdrawal.multisigId, { from: this.state.sender, gas: config.gas }, (err, txhash) => {
         if (err) return reject(err)
-        this.out('Withdrawal Signed')
-
-        const signerIndex = this.state.wallet.signers.indexOf(this.state.sender)
-        const newSigned = this.state.wallet.hasSigned.slice()
-        newSigned[signerIndex] = true
-        if (signerIndex >= 0) {
-          this.setState({
-            wallet: Object.assign({}, this.state.wallet, {
-              hasSigned: newSigned
-            })
-          })
-        }
-
-        resolve([this.state.withdrawal.walletId, txhash])
+        this.out('Withdrawal Executed')
+        resolve(this.state.walletId, txhash)
       })
     })
-      .catch(this.error)
   }
 
   renderWallet() {
     return <div>
-      <h1>Sign Withdrawal #{this.state.withdrawalId} for Wallet #{this.state.withdrawal.walletId}</h1>
+      <h1>Execute from Wallet {this.state.walletId}</h1>
 
       <div className='form-item'>
         <label>Balance: </label>
@@ -191,7 +147,7 @@ class Sign extends Component {
 
   renderSign() {
     return <div>
-      <h1>Sign</h1>
+      <h1>Execute</h1>
 
       <div className='form-item'>
         <label>Amount to withdraw: </label>
@@ -212,30 +168,14 @@ class Sign extends Component {
         </div> : null
       }
 
-      {this.state.wallet && this.state.wallet.signers ?
-        <div className='form-item form-solo'>
-          <label>Signers: </label><br/>
-          {Array.apply(null, { length: Math.max(3, this.state.wallet.signers.length) }).map((x, i) => {
-            return <div key={i}>
-              <span className='text address'>{this.state.wallet.signers[i]}</span>
-              {this.state.wallet.hasSigned ? <span className='address-annotation'>{this.state.wallet.hasSigned[i] ? '✓ signed' : '✗ awaiting signature'}</span> : null}
-            </div>
-          })}
-        </div> : null
-      }
+      <div className='form-item'>
+        <label>Sender: </label>
+        <input type='text' value={this.state.sender} onChange={e => this.setState({
+          sender: e.target.value
+        })} />
+      </div>
 
-      {this.state.wallet && this.state.wallet.hasSigned && this.state.wallet.hasSigned.filter(x => x).length >= this.state.wallet.quarum ?
-        <p className='note'>Quarum has been obtained. Any signer may <Link to="/execute">execute the withdrawal</Link>.</p>
-        : <div>
-          <div className='form-item'>
-            <label>Signing Address: </label>
-            <input type='text' value={this.state.sender} onChange={e => this.setState({
-              sender: e.target.value
-            })} />
-          </div>
-          <a className='button vspace' onClick={this.sign}>Sign</a>
-        </div>
-      }
+      <a className='button vspace' onClick={this.execute}>Execute Withdrawal</a>
     </div>
   }
 
@@ -256,4 +196,4 @@ class Sign extends Component {
   }
 }
 
-export default Sign
+export default Execute
