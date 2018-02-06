@@ -162,7 +162,7 @@ class Sign extends Component {
 
       <div className='form-item'>
         <label>Balance: </label>
-        <span type='text' className='text-right'>{this.state.wallet.balance.toString()} ETH</span>
+        <span type='text' className='text-right'>{this.state.wallet.balance.toString()} Wei</span>
       </div>
 
       <div className='form-item'>
@@ -196,6 +196,20 @@ class Sign extends Component {
       <h1>Sign</h1>
 
       <div className='form-item'>
+        <label>Wallet Id: </label>
+        <span type='text' className='readonly text-right'>{this.state.withdrawal.walletId}</span>
+      </div>
+
+      {this.state.wallet ?
+        <div>
+          <div className='form-item'>
+            <label>Balance: </label>
+            <span type='text' className='text-right readonly'>{this.state.wallet.balance.toString()} Wei</span>
+          </div>
+        </div> : null
+      }
+
+      <div className='form-item'>
         <label>Amount to withdraw: </label>
         <span type='text' className='readonly text-right'>{this.state.withdrawal.amount.toString()} Wei</span>
       </div>
@@ -204,15 +218,6 @@ class Sign extends Component {
         <label>Withdrawal address: </label>
         <span type='text' className='readonly'>{this.state.withdrawal.to.toString()}</span>
       </div>
-
-      {this.state.wallet ?
-        <div>
-          <div className='form-item'>
-            <label>Balance: </label>
-            <span type='text' className='text-right'>{this.state.wallet.balance.toString()} Wei</span>
-          </div>
-        </div> : null
-      }
 
       {this.state.wallet && this.state.wallet.signers ?
         <div className='form-item form-solo'>

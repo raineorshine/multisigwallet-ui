@@ -152,7 +152,7 @@ class Propose extends Component {
         })} />
       </div>
 
-      <p className='note'>Only one of the signers can propose a withdrawal.</p>
+      <p className='note'>Any signer can propose a withdrawal.</p>
       <a className='button' onClick={this.proposeWithdrawal}>Propose Withdrawal</a>
     </div>
   }
