@@ -6,10 +6,15 @@ npm start
 
 ## Setup
 
-Install app dependencies:
-
 ```
 npm install
+
+cd ../mutable-immutable-ledger
+npm run migrate
+
+cd ../multisigwallet
+npm run migrate
+# manually copy deployed address to config.json
 ```
 
 ---
